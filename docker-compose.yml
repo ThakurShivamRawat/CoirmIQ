@@ -1,0 +1,171 @@
+services:
+  # ==============================================================================
+  # Database Service (PostgreSQL 17)
+  # ==============================================================================
+  ticket-postgres:
+    image: postgres:17-alpine
+    container_name: ticket-postgres
+    restart: unless-stopped
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME:-ticket_db}
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_NAME:-ticket_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ==============================================================================
+  # Cache Service (Redis 7)
+  # ==============================================================================
+  ticket-redis:
+    image: redis:7-alpine
+    container_name: ticket-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ==============================================================================
+  # Backend Application Service (Spring Boot)
+  # ==============================================================================
+  backend-app:
+    build:
+      context: ./CoirmIQ BackEnd
+      dockerfile: Dockerfile
+    container_name: backend-app
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      # Database Connection Override
+      DB_HOST: ticket-postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME:-ticket_db}
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD:-postgres}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://ticket-postgres:5432/${DB_NAME:-ticket_db}
+
+      # Redis Connection Override
+      REDIS_HOST: ticket-redis
+      REDIS_PORT: 6379
+
+      # Explicit Application Variables
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRATION_MS: ${JWT_EXPIRATION_MS:-86400000}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      OAUTH2_REDIRECT_URI: ${OAUTH2_REDIRECT_URI}
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET}
+    depends_on:
+      ticket-postgres:
+        condition: service_healthy
+      ticket-redis:
+        condition: service_healthy
+    volumes:
+      - ./CoirmIQ BackEnd/local-logs:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z localhost 8080 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # ==============================================================================
+  # React Consumer Frontend Application (Vite/Node)
+  # ==============================================================================
+  user-panel:
+    build:
+      context: ./CoirmIQ UserPanel
+      dockerfile: Dockerfile
+      target: development
+    container_name: user-panel
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+      VITE_USE_MOCK: ${VITE_USE_MOCK:-false}
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./CoirmIQ UserPanel:/app
+      - /app/node_modules
+    depends_on:
+      - backend-app
+
+  # ==============================================================================
+  # React Organizer Frontend Application (Vite/Node)
+  # ==============================================================================
+  host-panel:
+    build:
+      context: ./coirmIQ HostPanel
+      dockerfile: Dockerfile
+      target: development
+    container_name: host-panel
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    env_file:
+      - .env
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+      VITE_USE_MOCK: ${VITE_USE_MOCK:-false}
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./coirmIQ HostPanel:/app
+      - /app/node_modules
+    depends_on:
+      - backend-app
+
+  # ==============================================================================
+  # React Admin Dashboard Frontend Application (Vite/Node)
+  # ==============================================================================
+  admin-panel:
+    build:
+      context: "./CoirmIQ Admin panel"
+      dockerfile: Dockerfile
+      target: development
+    container_name: admin-panel
+    restart: unless-stopped
+    ports:
+      - "3002:3002"
+    env_file:
+      - .env
+    environment:
+      VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+      VITE_USE_MOCK: ${VITE_USE_MOCK:-false}
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - "./CoirmIQ Admin panel:/app"
+      - /app/node_modules
+    depends_on:
+      - backend-app
+
+# ==============================================================================
+# Persistent Storage Volumes Definition
+# ==============================================================================
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local

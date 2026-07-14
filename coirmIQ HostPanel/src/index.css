@@ -1,0 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-dark-950: #05070c;
+  --color-dark-900: #0B0F19;
+  --color-dark-800: #111827;
+  --color-dark-700: #1F2937;
+  --color-dark-600: #374151;
+  --color-accent: #6366f1;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  @apply bg-[#05070c] text-slate-100 antialiased min-h-screen selection:bg-[#6366f1] selection:text-white;
+}
+
+/* Custom scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-[#0B0F19];
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-800 rounded hover:bg-slate-700 transition-colors;
+}
+
+#root {
+  display: block;
+  min-height: 100vh;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.dark-card {
+  @apply bg-[#111827]/60 border border-slate-800/80 rounded-xl backdrop-blur-md;
+}
+
+.input-field {
+  @apply w-full px-4 py-2.5 bg-slate-900 border border-slate-800 rounded-lg text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder:text-slate-500;
+}
+
+.btn-primary {
+  @apply px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition-all focus:ring-2 focus:ring-indigo-500/40 outline-none active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none;
+}
+
+.btn-secondary {
+  @apply px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-medium rounded-lg border border-slate-700 transition-all outline-none active:scale-[0.98] disabled:opacity-50;
+}
+
+.btn-danger {
+  @apply px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-medium rounded-lg transition-all focus:ring-2 focus:ring-rose-500/40 outline-none active:scale-[0.98] disabled:opacity-50;
+}
+
+.status-badge-success {
+  @apply px-2.5 py-1 text-xs font-semibold rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/25;
+}
+
+.status-badge-pending {
+  @apply px-2.5 py-1 text-xs font-semibold rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/25;
+}
+
+.status-badge-failed {
+  @apply px-2.5 py-1 text-xs font-semibold rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/25;
+}
